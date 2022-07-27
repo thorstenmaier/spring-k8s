@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spring-k8s-deployment
+  labels:
+    app: spring-k8s
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: spring-k8s
+  template:
+    metadata:
+      labels:
+        app: spring-k8s
+    spec:
+      containers:
+        - name: spring-k8s
+          image: docker.io/library/spring-k8s:0.0.1-SNAPSHOT
+          ports:
+            - containerPort: 8080
+          livenessProbe:
+            httpGet:
+              port: 8080
+              path: /actuator/health/liveness
+            initialDelaySeconds: 5
+          readinessProbe:
+            httpGet:
+              port: 8080
+              path: /actuator/health/readiness
