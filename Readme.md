@@ -31,7 +31,27 @@ minikube docker-env
 mvnw spring-boot:build-image
 ```
 
-### Deploy to Minikube
+### Create deployment and service yaml from scratch
+
+```shell
+kubectl create deployment --image=docker.io/library/spring-k8s:0.0.1-SNAPSHOT --dry-run=client -o yaml spring-k8s-deployment > k8s/deployment.yaml
+```
+
+```shell
+kubectl create service clusterip spring-k8s-deployment --tcp 8080:8080 -o yaml --dry-run=client > k8s/service.yaml
+```
+
+```shell
+kubectl apply -f k8s/.
+```
+
+ClusterIP service is not reachable from outside the cluster. Therefore start a port forward to access the service
+
+```shell
+kubectl port-forward service/spring-k8s-deployment 8080:8080
+```
+
+### Alternative: Deploy predefined yaml files to Minikube
 
 ```shell
 minikube kubectl -- apply -f deployment.yml
