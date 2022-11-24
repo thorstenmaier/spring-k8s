@@ -4,7 +4,6 @@ This little example shows who to get a Spring Boot application up and running in
 
 ## Used Spring Modules
 
-- Spring Native
 - Spring Reactive Web
 - Spring R2DBC
 - H2
@@ -19,6 +18,8 @@ This little example shows who to get a Spring Boot application up and running in
 minikube delete
 minikube start --driver virtualbox --no-vtx-check --memory 8192 --cpus 4
 ```
+
+You may need to choose a different driver such as Docker or Hyperv.
 
 ### Build Docker image
 
