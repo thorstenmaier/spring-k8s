@@ -1,14 +1,67 @@
 # Simple Spring Boot Graal VM Native Image K8s example
 
-This little example shows who to get a Spring Boot application up and running in a Minikube Kubernetes Cluster.
+This example shows how to implement a Spring Boot application up and get it up and running in a Kubernetes Cluster.
 
-## Used Spring Modules
+## Create a green field Spring Boot Application
 
-- Spring Reactive Web
+Select the following dependencies:
+
+- Spring Reactive Web (Spring Webflux)
 - Spring R2DBC
 - H2
 - Spring Boot Actuator
 - Lombok
+- Spring Native
+
+## Implement persistence and web layer
+
+```java
+@RestController
+@RequiredArgsConstructor
+class CustomerHttpController {
+
+    private final CustomerRepository customerRepository;
+
+    @GetMapping("/customers")
+    Flux<Customer> get() {
+        return this.customerRepository.findAll();
+    }
+}
+
+interface CustomerRepository extends ReactiveCrudRepository<Customer, Integer> {
+}
+
+record Customer (@Id Integer id, String name) {
+}
+```
+
+Create schema.sql file in `src/main/resources`:
+
+```sql
+create table customer (
+    id serial primary key,
+    name varchar(255) not null
+);
+```
+
+Create an application listener to get some data into the database:
+
+```java
+@SpringBootApplication
+public class SpringK8sApplication {
+    @Bean
+    ApplicationListener<ApplicationStartedEvent> applicationStartedEventApplicationListener(CustomerRepository customerRepository) {
+        return event -> Flux.just("Simon", "Thomas")
+                .map(s -> new Customer(null, s))
+                .flatMap(customerRepository::save)
+                .subscribe(System.out::println);
+    }
+}
+```
+
+- Start application
+- Open browser 
+- Test web interface `http://localhost:8080/customers`
 
 ## Steps to get it up and running in K8s cluster
 
