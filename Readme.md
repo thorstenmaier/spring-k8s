@@ -63,26 +63,21 @@ public class SpringK8sApplication {
 - Open browser 
 - Test web interface `http://localhost:8080/customers`
 
-## Steps to get it up and running in K8s cluster
+## Steps to get it up and running in Docker
 
-### Start Minikube
+With the `mvnw spring-boot:build-image` command, we can now very easily create a Docker image from this Spring Boot application. 
+However, we are dependent on the local build environment (e.g. the local Java version). 
+Since we want to create a native image with GraalVM later anyway, let's use this VM directly in a Docker container to build the application.
+First we create a classic standalone fat JAR in the target directory (`mvn clean package`).
 
 ```shell
-minikube delete
-minikube start --driver virtualbox --no-vtx-check --memory 8192 --cpus 4
+docker run -v ${PWD}:/home/app -w /home/app vegardit/graalvm-maven:22.3.1-java17 mvn clean package
 ```
 
-You may need to choose a different driver such as Docker or Hyperv.
-
-### Build Docker image
+However, using the same technique, we are also able to create a Docker image with the help of this helper image:
 
 ```shell
-minikube docker-env
-@FOR /f "tokens=*" %i IN ('minikube -p minikube docker-env') DO @%i
-```
-
-```shell
-mvnw spring-boot:build-image
+docker run -v ${PWD}:/home/app -w /home/app -v /var/run/docker.sock:/var/run/docker.sock vegardit/graalvm-maven:22.3.1-java17 mvn spring-boot:build-image
 ```
 
 ### Create deployment and service yaml from scratch
@@ -104,19 +99,3 @@ ClusterIP service is not reachable from outside the cluster. Therefore start a p
 ```shell
 kubectl port-forward service/spring-k8s-deployment 8080:8080
 ```
-
-### Alternative: Deploy predefined yaml files to Minikube
-
-```shell
-minikube kubectl -- apply -f deployment.yml
-```
-
-```shell
-minikube kubectl -- apply -f service.yml
-```
-
-## Access in browser
-
-Call `minikube docker-env` to get the ip address.
-
-Open browser and navigate to `http://[ip]:32055/`
