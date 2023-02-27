@@ -1,6 +1,7 @@
-# Simple Spring Boot Graal VM Native Image K8s example
+# Spring Boot Graal VM Native Image K8s example
 
-This example shows how to implement a Spring Boot application up and get it up and running in a Kubernetes Cluster.
+This example shows step by step how to implement a Spring Boot application and get it up and running in a Kubernetes 
+Cluster in a "cloud native" way.
 
 ## Create a green field Spring Boot Application
 
@@ -91,13 +92,13 @@ image in Docker or Kubernetes.
 Now we are able to run the application in docker:
 
 ```shell
-docker run -p 8080:8080 <<image-name>>
+docker run -p 8080:8080 docker.io/library/spring-k8s:0.0.1-SNAPSHOT
 ```
 
 or in Kubernetes:
 
 ```shell
-kubectl run --image=<<image-name>> my-app
+kubectl run --image=docker.io/library/spring-k8s:0.0.1-SNAPSHOT my-app
 kubectl logs my-app
 ```
 
@@ -120,11 +121,49 @@ operating mode is not really "cloud native". Why?
   but to be honest, our application is still very small at the moment. Wouldn't it be great if we could improve the
   start-up time by a factor of 30?
 
-## Create deployment and service yaml from scratch
+## Readiness and liveness of the application
+
+The readiness state in Kubernetes indicates whether an application is "ready" to receive requests or not.
+The liveness state in Kubernetes indicates whether an application has to be restarted by the cluster or not.
+
+We have already included Spring Boot Actuator as a dependency in the Spring application. This module offers the 
+possibility to make liveness and readiness states accessible. This requires an adjustment of the "application.properties".
+
+```properties
+management.endpoints.web.exposure.include=*
+management.endpoint.health.show-details=always
+management.endpoint.health.probes.enabled=true
+```
+
+Liveness and readiness probes are specified declaratively in Kubernetes. To do this, we first generate a template for 
+the upcoming deployment and then adapt this content.
 
 ```shell
 kubectl create deployment --image=docker.io/library/spring-k8s:0.0.1-SNAPSHOT --dry-run=client -o yaml spring-k8s-deployment > k8s/deployment.yaml
 ```
+
+Add the liveness and readiness probes to the deployment.yaml:
+
+```yaml
+spec:
+  template:
+    spec:
+      containers:
+        - name: spring-k8s
+          image: docker.io/library/spring-k8s:0.0.1-SNAPSHOT
+          livenessProbe:
+            httpGet:
+              port: 8080
+              path: /actuator/health/liveness
+            initialDelaySeconds: 5
+          readinessProbe:
+            httpGet:
+              port: 8080
+              path: /actuator/health/readiness
+```
+
+## Create deployment and service yaml from scratch
+
 
 ```shell
 kubectl create service clusterip spring-k8s-deployment --tcp 8080:8080 -o yaml --dry-run=client > k8s/service.yaml
@@ -134,7 +173,7 @@ kubectl create service clusterip spring-k8s-deployment --tcp 8080:8080 -o yaml -
 kubectl apply -f k8s/.
 ```
 
-ClusterIP service is not reachable from outside the cluster. Therefore start a port forward to access the service
+ClusterIP service is not reachable from outside the cluster. Therefore, start a port forward to access the service
 
 ```shell
 kubectl port-forward service/spring-k8s-deployment 8080:8080
