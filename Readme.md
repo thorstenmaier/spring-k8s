@@ -217,30 +217,11 @@ public Flux<Customer> getAllCustomers(@RequestParam(required = false, defaultVal
 ## Use Native Images
 
 * Show startup time `kubectl get pod <<pod-name>>`
-* Add plugin to `pom.xml`
-
-```xml
-<build>
-  <pluginManagement>
-      <plugins>
-          <plugin>
-              <groupId>org.springframework.boot</groupId>
-              <artifactId>spring-boot-maven-plugin</artifactId>
-              <configuration>
-                  <image>
-                      <builder>paketobuildpacks/builder:tiny</builder>
-                      <env>
-                          <BP_NATIVE_IMAGE>true</BP_NATIVE_IMAGE>
-                      </env>
-                  </image>
-              </configuration>
-          </plugin>
-      </plugins>
-  </pluginManagement>
-</build>
+* Rebuild Docker Image with `-Pnative` (takes much more time).
+```shell
+docker run -v ${PWD}:/home/app -w /home/app -v /var/run/docker.sock:/var/run/docker.sock -v ${HOME}/.m2/repository:/root/.m2/repository vegardit/graalvm-maven:22.3.1-java17 mvn spring-boot:build-image -Pnative
 ```
-
-* Rerun build (takes much more time) and redeploy application
+* Redeploy application
 
 ## Graceful shudown (optional)
 
